@@ -48,7 +48,16 @@ def create_solution(excel_path: str) -> dict:
     print("\nOS ordenadas por prioridade e duração contínua:")
     print(os_ordenados[["OS", "Prioridade", "Duracao_continua"]].head(10)) # saída
 
+    # 5. demanda por OS e habilidade
+    demanda_por_os = {} 
+    for i, linha in hora_por_OS_habilidade.iterrows():
+        os_id = linha["OS"]
+        habilidade = linha["Habilidade"]
+        horas = linha["Demanda_horas"]
 
+        if os_id not in demanda_por_os:
+            demanda_por_os[os_id] = {}
+        demanda_por_os[os_id][habilidade] = horas
     return {}
 
 if __name__ == "__main__":
