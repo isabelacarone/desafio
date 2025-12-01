@@ -14,12 +14,12 @@ def create_solution(excel_path: str) -> dict:
 
 
     tarefas_df = tarefas_df.copy()  # por segurança só 
-    tarefas_df['duração da demanda'] = tarefas_df['duração'] * tarefas_df['quantidade']
+    tarefas_df["HH_demanda"] = tarefas_df["Duração"] * tarefas_df["Quantidade"]
 
     # soma hrs por OS e habilidades 
-    hora_por_OS_habilidade = tarefas_df.groupby(['OS', 'habilidade'])['duração da demanda'].sum().reset_index()
-    print(hora_por_OS_habilidade)
-    
+    hora_por_OS_habilidade = tarefas_df.groupby(["OS", "Habilidade"])["HH_demanda"].sum().reset_index()
+
+    print(hora_por_OS_habilidade)    
     return {}
 
 
