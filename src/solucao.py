@@ -1,90 +1,110 @@
 import pandas as pd
-import numpy as np
 
-def extrair_nr_dias(nome_dia: str) -> int:
-    ''' retira o Dia_ e deixa só o numero referente ao dia 
-        ex: Dia_15 -> 15
+def extrair_num_do_dia(nome_dia: str) -> int:
     '''
-    try: 
-        partes = str(nome_dia).split('_')
+    retira o Dia_ e deixa só o número 'Dia_3' 
+    se não der certo retorna False
+    '''
+    try:
+        partes = str(nome_dia).split("_")
         numero = int(partes[-1])
         return numero
     except:
-        return 0 
+        return False
 
 
-
-# função pedida create_solution
 def create_solution(excel_path: str) -> dict:
-    '''realiza a leitura do arquivo excel e cria o dicionario com a solucao
-        levando em consideração as regras de:
-        - prioridade (z, a, b e c)
-        - condição (operando ou parada)
-        - capacidade de recursos
-        - predecessoras
+    '''
+    le o arquivo Excel do desafio e realiza a programação semanal da OS,
+    tedno em vista os critérios:
+      1 prioridade (Z A B C)
+      2 Parada? Sim ou Não
+      3 predecessora
+      4 disponibilidade de horas por habilidade
     '''
 
+    print(f"Realizando a leitura dos arquivos Excel em: {excel_path}")
 
-    # >> 1 leitura do arquivo excel
-    os_df = pd.read_excel(excel_path, sheet_name='OS')
-    tarefas_df = pd.read_excel(excel_path, sheet_name='Tarefas')
-    recursos_df = pd.read_excel(excel_path, sheet_name='Recursos')
-    paradas_df = pd.read_excel(excel_path, sheet_name='Paradas')
+    # 1. leitura das abas 
 
-    # >> 2 calculo de duração por quantidade POR OS 
+    os_df = pd.read_excel(excel_path, sheet_name="OS")
+    tarefas_df = pd.read_excel(excel_path, sheet_name="Tarefas")
+    recursos_df = pd.read_excel(excel_path, sheet_name="Recursos")
+    paradas_df = pd.read_excel(excel_path, sheet_name="Paradas")
 
+    # 2. calcular demanda_horas por tarefa (Duração * Quantidade) 
+    # se mudar o nome da erro por causa do excel 
+
+    tarefas_df = tarefas_df.copy()
     tarefas_df["Demanda_horas"] = tarefas_df["Duração"] * tarefas_df["Quantidade"]
-    
-    # >> 3 sum  Demanda_horas por OS e Habilidades
-    ''' quantas horas de cada habilidade essa OS precisa?
-        lembrar de usar grouby'''
-    
-    # demanda por OS e habilidades 
-    demanda_OS_habilidade_df = tarefas_df.groupby(['OS_ID', 'Habilidade'])['Demanda_horas'].sum().reset_index()
-    
-    # estrutura p ver melhor 
 
-    demanda_OS_habilidade_dicionario = {}
-    for _, linha in demanda_OS_habilidade_df.iterrows():
-        # avaliar uso do iterrows depois 
-        os_id = linha['OS_ID']
-        habilidade = linha['Habilidade']
-        demanda_horas = linha['Demanda_horas']
-        
-        if os_id not in demanda_OS_habilidade_dicionario:
-            demanda_OS_habilidade_dicionario[os_id] = {}
-        
-        demanda_OS_habilidade_dicionario[os_id][habilidade] = demanda_horas
-
-    # >> 4 calcular a duração contínua por OS
-    ''' somar a duração das tarefas, quantas vão dar em 1d?'''
-    duracao_continua_por_OS = tarefas_df.groupby('OS_ID')['Duração'].sum().reset_index()
-    duracao_continua_por_OS_dict = duracao_continua_por_OS.rename(columns={'Duração': 'Duracao_continua'}).set_index('OS_ID')['Duracao_continua'].to_dict()
-
-    # >> 5 juntar infos na OS
-    os_df = os_df.merge(duracao_continua_por_OS, on='OS_ID', how='left')
     
-    # >> 6 colocando as prioridades como nr 
-    prioridade = {"Z": 1, "A": 2, "B": 2, "C": 3}
+    # 3. sum() Demanda_horas por OS e habilidade
+
+    demanda_os_hab_df = tarefas_df.groupby(["OS", "Habilidade"]) ["Demanda_horas"].sum().reset_index()
+    
+    # criar estrutura de demanda por OS e habilidade
+    demanda_por_os = {}
+
+    # uso de lista de tuplas para melhorar a agilidade 
+    for linha in demanda_os_hab_df.itertuples():
+        os_id = linha.OS
+        habilidade = linha.Habilidade
+        horas = linha.Demanda_horas
+
+        if os_id not in demanda_por_os:
+            demanda_por_os[os_id] = {}
+
+        demanda_por_os[os_id][habilidade] = horas
+
+
+    # 4. cálculo da duração contínua por OS
+
+    duracao_os = tarefas_df.groupby("OS")["Duração"].sum().reset_index()
+    duracao_os = duracao_os.rename(columns={"Duração": "Duracao_continua"})
+
+    os_df = os_df.merge(duracao_os, on="OS", how="left")
+
+  
+    # 5. Ordenar por prioridade e duração contínua e transofmrar prioridade em números!!
+
+    prioridade = {"Z": 1, "A": 2, "B": 3, "C": 4}
     os_df["Prioridade_num"] = os_df["Prioridade"].map(prioridade)
 
-    # >> 7 ordenando as OS pela prioridade e condição
-    os_df = os_df.sort_values(by=['Prioridade_num', 'Duracao_continua'], ascending=[True, True]).reset_index(drop=True)
+    # ordenadas por Prioridade_num e Duracao_continua, respectivamente Z, A, B e C e OS com menor duração 1° 
+    os_ordenadas = os_df.sort_values(
+        by=["Prioridade_num", "Duracao_continua"], ascending=[True, True]
+    )
 
-    # >> 8 capacidade de recursos por dia e habilidade
+    # 6. Criar estrutura de capacidade por dia e habilidade
+    # dia, habilidade) ==> HH_Disponivel
+    
     capacidade = {}
-    for _, linha in recursos_df.iterrows():
-        dia = linha['Dia']
-        habilidade = linha['Habilidade']
-        hora_disp = linha["HH_Disponivel"]
 
-        chave = (dia, habilidade)
-        capacidade[chave] = hora_disp
+    for linha in recursos_df.itertuples():
+        dia = linha.Dia
+        habilidade = linha.Habilidade
+        hora_disp = linha.HH_Disponivel
+        capacidade[(dia, habilidade)] = hora_disp
+
+    # acompanhamento do uso de horas por dia/habilidade
+    uso = {}
+
+    # dias disponíveis no backlog
+    dias_disponiveis = sorted(recursos_df["Dia"].unique())
+
+    # 7. encontrando os dias de parada
+    dias_parada = paradas_df.loc[paradas_df["Parada"] == "Sim", "Dia"].tolist()
+
+    # 8. Loop principal para programar as OS
     
-    # armazena quantas horas já foram usadas 
-    uso = {} 
-    
+    programacao = {}      # OS ==> Dia
+    nao_programadas = []  # OS que não deram para nenhum dia
 
-    # lista de dias disponíveis na aba de recurso
-    dias_disponiveis = sorted(recursos_df["Dia"].unique()) 
+    # percorre as OS já ordenadas
+    for linha in os_ordenadas.itertuples():  
+        os_id = linha.OS
+        condicao = linha.Condição
+        predecessora = linha.Predecessora
 
+        
