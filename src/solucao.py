@@ -11,3 +11,7 @@ def create_solution(excel_path: str) -> dict:
     recursos_df = pd.read_excel(excel_path, sheet_name='Recursos')
     paradas_df = pd.read_excel(excel_path, sheet_name='Paradas')
 
+    print(tarefas_df.head()) 
+    return {
+    }
+
