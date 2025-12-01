@@ -35,3 +35,9 @@ def create_solution(excel_path: str) -> dict:
 
     tarefas_df["Demanda_horas"] = tarefas_df["Duração"] * tarefas_df["Quantidade"]
     
+    # >> 3 sum  Demanda_horas por OS e Habilidades
+    ''' quantas horas de cada habilidade essa OS precisa?
+        lemnbrar de usar grouby'''
+    
+    demanda_por_OS_habilidade = tarefas_df.groupby(['OS_ID', 'Habilidade'])['Demanda_horas'].sum().reset_index()
+    
