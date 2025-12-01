@@ -59,7 +59,7 @@ def create_solution(excel_path: str) -> dict:
     # >> 4 calcular a duração contínua por OS
     ''' somar a duração das tarefas, quantas vão dar em 1d?'''
     duracao_continua_por_OS = tarefas_df.groupby('OS_ID')['Duração'].sum().reset_index()
-    duracao_continua_por_OS_dict = duracao_continua_por_OS.rename(columns={'Duração': 'Duracao_Continua'}).set_index('OS_ID')['Duracao_continua'].to_dict()
+    duracao_continua_por_OS_dict = duracao_continua_por_OS.rename(columns={'Duração': 'Duracao_continua'}).set_index('OS_ID')['Duracao_continua'].to_dict()
 
     # >> 5 juntar infos na OS
     os_df = os_df.merge(duracao_continua_por_OS, on='OS_ID', how='left')
@@ -67,3 +67,24 @@ def create_solution(excel_path: str) -> dict:
     # >> 6 colocando as prioridades como nr 
     prioridade = {"Z": 1, "A": 2, "B": 2, "C": 3}
     os_df["Prioridade_num"] = os_df["Prioridade"].map(prioridade)
+
+    # >> 7 ordenando as OS pela prioridade e condição
+    os_df = os_df.sort_values(by=['Prioridade_num', 'Duracao_continua'], ascending=[True, True]).reset_index(drop=True)
+
+    # >> 8 capacidade de recursos por dia e habilidade
+    capacidade = {}
+    for _, linha in recursos_df.iterrows():
+        dia = linha['Dia']
+        habilidade = linha['Habilidade']
+        hora_disp = linha["HH_Disponivel"]
+
+        chave = (dia, habilidade)
+        capacidade[chave] = hora_disp
+    
+    # armazena quantas horas já foram usadas 
+    uso = {} 
+    
+
+    # lista de dias disponíveis na aba de recurso
+    dias_disponiveis = sorted(recursos_df["Dia"].unique()) 
+
