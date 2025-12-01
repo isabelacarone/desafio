@@ -12,6 +12,24 @@ def extrair_num_do_dia(nome_dia: str) -> int:
     except:
         return False
 
+def tem_predecessora(predecessora) -> bool:
+    '''
+    retorna True se REALMENTE existe uma predecessora
+    é  'sem predecessora' quando:
+      - NaN (valor vazio do Excel)
+      - string vazia ""
+    '''
+    # Caso comum: célula vazia no Excel -> NaN
+    if pd.isna(predecessora):
+        return False
+    
+    # Se for string, pode estar vazia ou só com espaços
+    if isinstance(predecessora, str) and predecessora.strip() == "":
+        return False
+    
+    # Qualquer outra coisa (ex.: "OS_4") a gente considera que tem predecessora
+    return True
+
 
 def create_solution(excel_path: str) -> dict:
     '''
@@ -195,5 +213,3 @@ if __name__ == "__main__":
 
     print("\nOS não programadas (algumas):")
     print(resultado["nao_programadas"][:20])
-
-# a logica de predecessora ta errada 
