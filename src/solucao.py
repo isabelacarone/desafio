@@ -141,11 +141,11 @@ def create_solution(excel_path: str) -> dict:
             nao_programadas.append(os_id)
             continue
 
-        # 8.4 tratar as predecessoras
+        # 8.4 tratar as predecessoras - de outra forma 
 
         dia_minimo = None # começa vazio
 
-        if pd.notna(predecessora):
+        if tem_predecessora(predecessora):
             dia_predecessora = programacao.get(predecessora)
             
             # se a predecessora não foi programada, não consigo rodar a OS
