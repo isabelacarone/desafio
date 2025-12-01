@@ -196,3 +196,4 @@ if __name__ == "__main__":
     print("\nOS não programadas (algumas):")
     print(resultado["nao_programadas"][:20])
 
+# a logica de predecessora ta errada 
