@@ -32,10 +32,14 @@ def create_solution(excel_path: str) -> dict:
 
     print("\nDuração sequencial por OS:")
     print(duracao_os.head())
+
+    # 3. juntar a duração contínua na tabela de OS
+    os_df = os_df.merge(duracao_os, on="OS", how="left")
+
+    print("\nOS com duração contínua:")
+    print(os_df[["OS", "Prioridade", "Condição", "Predecessora", "Duracao_continua"]].head())
+
     return {}
-
-    # 3. 
-
 
 if __name__ == "__main__":
     caminho_arquivo = r"C:\Users\isaca\Desktop\desafio\data\backlog_desafio_500.xlsx"
