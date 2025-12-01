@@ -64,3 +64,6 @@ def create_solution(excel_path: str) -> dict:
     # >> 5 juntar infos na OS
     os_df = os_df.merge(duracao_continua_por_OS, on='OS_ID', how='left')
     
+    # >> 6 colocando as prioridades como nr 
+    prioridade = {"Z": 1, "A": 2, "B": 2, "C": 3}
+    os_df[Prioridade_num] = os_df["Prioridade"].map(prioridade)
