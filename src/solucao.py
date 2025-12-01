@@ -39,6 +39,13 @@ def create_solution(excel_path: str) -> dict:
     print("\nOS com duração contínua:")
     print(os_df[["OS", "Prioridade", "Condição", "Predecessora", "Duracao_continua"]].head())
 
+    # 4. colocando a prioridade como numérica p ordenar as OS 
+    prioridades = {"Z": 1, "A": 2, "B": 3, "C": 4, "D": 5}
+    os_df["Prioridade_num"] = os_df["Prioridade"].map(prioridades)
+
+    # saída ordenada 
+    os_ordenados = os_df.sort_values(by=["Prioridade_num", "Duracao_continua"], ascending=[True, True])
+
     return {}
 
 if __name__ == "__main__":
