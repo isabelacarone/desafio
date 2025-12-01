@@ -24,20 +24,20 @@ def create_solution(excel_path: str) -> dict:
     hora_por_OS_habilidade = tarefas_df.groupby(["OS", "Habilidade"])["Demanda_horas"].sum().reset_index()
 
     print("\nHoras por OS e Habilidade:")
-    print(hora_por_OS_habilidade.head())
+    print(hora_por_OS_habilidade.head(10)) # saída
 
     # 2. uma OS cabe em 1 dia (8hrs)? -> duração sequencial
     duracao_os = tarefas_df.groupby("OS")["Duração"].sum().reset_index()
     duracao_os.rename(columns={"Duração": "Duracao_continua"}, inplace=True)
 
     print("\nDuração sequencial por OS:")
-    print(duracao_os.head())
+    print(duracao_os.head(10)) # saída
 
     # 3. juntar a duração contínua na tabela de OS
     os_df = os_df.merge(duracao_os, on="OS", how="left")
 
     print("\nOS com duração contínua:")
-    print(os_df[["OS", "Prioridade", "Condição", "Predecessora", "Duracao_continua"]].head())
+    print(os_df[["OS", "Prioridade", "Condição", "Predecessora", "Duracao_continua"]].head(10)) # saída
 
     # 4. colocando a prioridade como numérica p ordenar as OS 
     prioridades = {"Z": 1, "A": 2, "B": 3, "C": 4, "D": 5}
@@ -45,6 +45,9 @@ def create_solution(excel_path: str) -> dict:
 
     # saída ordenada 
     os_ordenados = os_df.sort_values(by=["Prioridade_num", "Duracao_continua"], ascending=[True, True])
+    print("\nOS ordenadas por prioridade e duração contínua:")
+    print(os_ordenados[["OS", "Prioridade", "Duracao_continua"]].head(10)) # saída
+
 
     return {}
 
