@@ -15,10 +15,10 @@ def create_solution(excel_path: str) -> dict:
     paradas_df = pd.read_excel(excel_path, sheet_name='Paradas')
 
 
-    # 1. quantas horas cada OS precisa de cada habilidade?
+    ''' 1. quantas horas cada OS precisa de cada habilidade? '''
 
     tarefas_df = tarefas_df.copy()  # por segurança
-    tarefas_df["Demanda_horas"] = tarefas_df["Duração"] * tarefas_df["Quantidade"]
+    tarefas_df["Demanda_horas"] = tarefas_df["Duração"] * tarefas_df["Quantidade"]      
 
     # soma horas por OS e por habilidade
     hora_por_OS_habilidade = tarefas_df.groupby(["OS", "Habilidade"])["Demanda_horas"].sum().reset_index()
@@ -26,20 +26,24 @@ def create_solution(excel_path: str) -> dict:
     print("\nHoras por OS e Habilidade:")
     print(hora_por_OS_habilidade.head(10)) # saída
 
-    # 2. uma OS cabe em 1 dia (8hrs)? -> duração sequencial
+
+    '''2. uma OS cabe em 1 dia (8hrs)? -> duração sequencial '''
     duracao_os = tarefas_df.groupby("OS")["Duração"].sum().reset_index()
     duracao_os.rename(columns={"Duração": "Duracao_continua"}, inplace=True)
 
     print("\nDuração sequencial por OS:")
     print(duracao_os.head(10)) # saída
 
-    # 3. juntar a duração contínua na tabela de OS
+
+    '''3. juntar a duração contínua na tabela de OS '''
     os_df = os_df.merge(duracao_os, on="OS", how="left")
 
     print("\nOS com duração contínua:")
     print(os_df[["OS", "Prioridade", "Condição", "Predecessora", "Duracao_continua"]].head(10)) # saída
 
-    # 4. colocando a prioridade como numérica p ordenar as OS 
+
+
+    '''4. colocando a prioridade como numérica p ordenar as OS '''
     prioridades = {"Z": 1, "A": 2, "B": 3, "C": 4, "D": 5}
     os_df["Prioridade_num"] = os_df["Prioridade"].map(prioridades)
 
@@ -48,7 +52,8 @@ def create_solution(excel_path: str) -> dict:
     print("\nOS ordenadas por prioridade e duração contínua:")
     print(os_ordenados[["OS", "Prioridade", "Duracao_continua"]].head(10)) # saída
 
-    # 5. demanda por OS e habilidade
+
+    '''5. demanda por OS e habilidade'''
     demanda_por_os = {} 
     for i, linha in hora_por_OS_habilidade.iterrows():
         os_id = linha["OS"]
@@ -58,6 +63,22 @@ def create_solution(excel_path: str) -> dict:
         if os_id not in demanda_por_os:
             demanda_por_os[os_id] = {}
         demanda_por_os[os_id][habilidade] = horas
+    
+    '''6. capacidade de recurso por dia e habilidade'''
+    print("\nColunas da aba Recursos:", recursos_df.columns)
+
+
+    coluna_horas = "HH_Disponivel" # de acordo com a planilha 
+    
+    capacidade_por_dia_habilidade = {}
+    for i, linha in recursos_df.iterrows():
+        habilidade = linha["Habilidade"]
+        horas_disponiveis = linha[coluna_horas]
+        capacidade_por_dia_habilidade[habilidade] = horas_disponiveis
+
+    print("\nCapacidade por dia e habilidade (top 10):")
+    f
+
     return {}
 
 if __name__ == "__main__":
