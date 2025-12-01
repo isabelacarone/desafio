@@ -124,7 +124,9 @@ def create_solution(excel_path: str) -> dict:
             continue
 
         # 8.4 tratar as predecessoras
-        dia_minimo = None
+
+        dia_minimo = None # começa vazio
+
         if pd.notna(predecessora):
             dia_predecessora = programacao.get(predecessora)
             
@@ -136,4 +138,45 @@ def create_solution(excel_path: str) -> dict:
             else:
                 dia_minimo = extrair_num_do_dia(dia_predecessora)
 
+        # 8.5 procurar algum dia_escolhido dentre os possíveis 
+
+        dia_escolhido = None # começa vazio 
+
+        for dia in dias_possiveis:
+            numero_dia = extrair_num_do_dia(dia)
+
+            # verificar se atende a restrição da predecessora
+            if dia_minimo is not None and numero_dia <= dia_minimo:
+                continue
+
+            # verificar se ha capacidade disponivel para todas as habilidades
+            cabe_no_dia = True
+
+            for habilidade, horas_necessarias in horas_p_habilidade.items():
+                capacidade_atual = capacidade.get((dia, habilidade), 0)
+                uso_atual = uso.get((dia, habilidade), 0)
+                horas_restantes = capacidade_atual - uso_atual
+
+                if horas_restantes < horas_necessarias:
+                    # poica a capidade da habilidade no dia x 
+                    cabe_no_dia = False
+                    break
             
+            # se achou um dia bom para
+            if cabe_no_dia: 
+                dia_escolhido = dia
+                break
+        # 8.6 se NÃO achou nenhum dia bom, adiciona como na lista de não programada
+        if dia_escolhido is None:
+            nao_programadas.append(os_id)
+            continue
+
+        # 8.7 achando o dia bom atualiza a programação e o uso de horas
+        for habilidade, horas_necessarias in horas_p_habilidade.items():
+            chave = (dia_escolhido, habilidade)
+            uso[chave] = uso.get(chave, 0) + horas_necessarias
+        
+        # 8.8 atualizar a programação da OS
+        programacao[os_id] = dia_escolhido
+
+        
