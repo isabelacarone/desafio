@@ -101,14 +101,26 @@ def create_solution(excel_path: str) -> dict:
     programacao = {}      # OS ==> Dia
     nao_programadas = []  # OS que não deram para nenhum dia
 
-    for linha in os_ordenadas.itertuples():
-        os_id = linha.OS
-        condicao = linha.Condicao
-        predecessora = linha.Predecessora
+    for os_linha in os_ordenadas.itertuples():
+        os_id = os_linha.OS
+        condicao = os_linha.Condição
+        predecessora = os_linha.Predecessora
 
-        # demanda de horas por habilidade
-        demanda_habs = demanda_por_os.get(os_id, {})
-        
+        # 8.1 quanto horas essa OS precisa de cada habilidade?
+        horas_p_habilidade = demanda_por_os.get(os_id, {})
 
-        # filtra dos dias de acordo com as condições 
-        
+        # 8.2 quais dias são possíveis para essa OS?
+        if condicao == "Parada":
+            dias_possiveis = dias_parada
+        else: 
+            dias_candidatos = []
+            for dia in dias_disponiveis:
+                if dia not in dias_parada:
+                    dias_candidatos.append(dia)
+
+        # 8.3 se não existe nenhum dia disponível adiciona na lista de não programadas
+        if not dias_possiveis:
+            nao_programadas.append(os_id)
+            continue
+
+        # 8.4 se 
