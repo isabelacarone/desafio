@@ -179,4 +179,20 @@ def create_solution(excel_path: str) -> dict:
         # 8.8 atualizar a programação da OS
         programacao[os_id] = dia_escolhido
 
-        
+    # 9. volta 
+    return {
+        "programacao": programacao,
+        "nao_programadas": nao_programadas,
+    }
+
+
+if __name__ == "__main__":
+    caminho_arquivo = r"C:\Users\isaca\Desktop\desafio\data\backlog_desafio_500.xlsx"
+    resultado = create_solution(caminho_arquivo)
+
+    print("\nProgramação gerada (algumas OS):")
+    print(list(resultado["programacao"].items())[:20])
+
+    print("\nOS não programadas (algumas):")
+    print(resultado["nao_programadas"][:20])
+
