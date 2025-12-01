@@ -77,7 +77,10 @@ def create_solution(excel_path: str) -> dict:
         capacidade_por_dia_habilidade[habilidade] = horas_disponiveis
 
     print("\nCapacidade por dia e habilidade (top 10):")
-    f
+    for habilidade, capacidade in list(capacidade_por_dia_habilidade.items())[:10]:
+        print(f"Habilidade: {habilidade}, Capacidade por dia: {capacidade} horas")
+    
+    
 
     return {}
 
