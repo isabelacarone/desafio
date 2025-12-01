@@ -101,10 +101,14 @@ def create_solution(excel_path: str) -> dict:
     programacao = {}      # OS ==> Dia
     nao_programadas = []  # OS que não deram para nenhum dia
 
-    # percorre as OS já ordenadas
-    for linha in os_ordenadas.itertuples():  
+    for linha in os_ordenadas.itertuples():
         os_id = linha.OS
-        condicao = linha.Condição
+        condicao = linha.Condicao
         predecessora = linha.Predecessora
 
+        # demanda de horas por habilidade
+        demanda_habs = demanda_por_os.get(os_id, {})
+        
+
+        # filtra dos dias de acordo com as condições 
         
