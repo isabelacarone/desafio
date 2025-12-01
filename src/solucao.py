@@ -1,6 +1,9 @@
 import pandas as pd 
 import numpy as np
 
+# ctrl z enter p sair do terminal
+
+
 def create_solution(excel_path: str) -> dict:
     # a função recebe o caminho de um arquivo excel e retorna um dicionário com a solução do pcm 
 
@@ -12,15 +15,26 @@ def create_solution(excel_path: str) -> dict:
     paradas_df = pd.read_excel(excel_path, sheet_name='Paradas')
 
 
+    # 1. quantas horas cada OS precisa de cada habilidade?
 
-    tarefas_df = tarefas_df.copy()  # por segurança só 
-    tarefas_df["HH_demanda"] = tarefas_df["Duração"] * tarefas_df["Quantidade"]
+    tarefas_df = tarefas_df.copy()  # por segurança
+    tarefas_df["Demanda_horas"] = tarefas_df["Duração"] * tarefas_df["Quantidade"]
 
-    # soma hrs por OS e habilidades 
-    hora_por_OS_habilidade = tarefas_df.groupby(["OS", "Habilidade"])["HH_demanda"].sum().reset_index()
+    # soma horas por OS e por habilidade
+    hora_por_OS_habilidade = tarefas_df.groupby(["OS", "Habilidade"])["Demanda_horas"].sum().reset_index()
 
-    print(hora_por_OS_habilidade)    
+    print("\nHoras por OS e Habilidade:")
+    print(hora_por_OS_habilidade.head())
+
+    # 2. uma OS cabe em 1 dia (8hrs)? -> duração sequencial
+    duracao_os = tarefas_df.groupby("OS")["Duração"].sum().reset_index()
+    duracao_os.rename(columns={"Duração": "Duracao_continua"}, inplace=True)
+
+    print("\nDuração sequencial por OS:")
+    print(duracao_os.head())
     return {}
+
+    # 3. 
 
 
 if __name__ == "__main__":
