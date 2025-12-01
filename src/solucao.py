@@ -37,7 +37,30 @@ def create_solution(excel_path: str) -> dict:
     
     # >> 3 sum  Demanda_horas por OS e Habilidades
     ''' quantas horas de cada habilidade essa OS precisa?
-        lemnbrar de usar grouby'''
+        lembrar de usar grouby'''
     
-    demanda_por_OS_habilidade = tarefas_df.groupby(['OS_ID', 'Habilidade'])['Demanda_horas'].sum().reset_index()
+    # demanda por OS e habilidades 
+    demanda_OS_habilidade_df = tarefas_df.groupby(['OS_ID', 'Habilidade'])['Demanda_horas'].sum().reset_index()
+    
+    # estrutura p ver melhor 
+
+    demanda_OS_habilidade_dicionario = {}
+    for _, linha in demanda_OS_habilidade_df.iterrows():
+        # avaliar uso do iterrows depois 
+        os_id = linha['OS_ID']
+        habilidade = linha['Habilidade']
+        demanda_horas = linha['Demanda_horas']
+        
+        if os_id not in demanda_OS_habilidade_dicionario:
+            demanda_OS_habilidade_dicionario[os_id] = {}
+        
+        demanda_OS_habilidade_dicionario[os_id][habilidade] = demanda_horas
+
+    # >> 4 calcular a duração contínua por OS
+    ''' somar a duração das tarefas, quantas vão dar em 1d?'''
+    duracao_continua_por_OS = tarefas_df.groupby('OS_ID')['Duração'].sum().reset_index()
+    duracao_continua_por_OS_dict = duracao_continua_por_OS.rename(columns={'Duração': 'Duracao_Continua'}).set_index('OS_ID')['Duracao_continua'].to_dict()
+
+    # >> 5 juntar infos na OS
+    os_df = os_df.merge(duracao_continua_por_OS, on='OS_ID', how='left')
     
