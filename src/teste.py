@@ -1,3 +1,4 @@
+
 import pandas as pd
 
 def extrair_num_do_dia(nome_dia: str) -> int:
@@ -7,30 +8,30 @@ def extrair_num_do_dia(nome_dia: str) -> int:
     '''
     try:
         # divide a string pelo caractere "_"
-        partes = str(nome_dia).split("_")  
-
+        partes = str(nome_dia).split("_")
         # pega a última parte (que deve ser o número) e converte para inteiro
-        numero = int(partes[-1])           
+        numero = int(partes[-1])
         return numero
     except:
-    
         # retorna false se a conversão falhar (ex: "Dia_X")
         return False
 
-
 def tem_predecessora(predecessora) -> bool:
     '''
-    retorna True se existe uma predecessora
-    é 'sem predecessora' quando:
-      - NaN
+    retorna True se REALMENTE existe uma predecessora
+     é 'sem predecessora' quando:
+      - NaN (valor vazio do Excel)
       - string vazia ""
     '''
+    # caso comum: célula vazia no Excel -> NaN
     if pd.isna(predecessora):
         return False
-
+    
+    # se for string, pode estar vazia ou só com espaços
     if isinstance(predecessora, str) and predecessora.strip() == "":
         return False
-
+    
+    # qualquer outra coisa (ex.: "OS_4") a gente considera que tem predecessora
     return True
 
 
@@ -46,11 +47,15 @@ def create_solution(excel_path: str) -> dict:
 
     print(f"Realizando a leitura dos arquivos Excel em: {excel_path}")
 
-# 1. leitura das abas 
+    # 1. leitura das abas 
 
+    # lê a aba de Ordens de Serviço (OS)
     os_df = pd.read_excel(excel_path, sheet_name="OS")
+    # lê a aba de Tarefas detalhadas por OS
     tarefas_df = pd.read_excel(excel_path, sheet_name="Tarefas")
+    # lê a aba de Recursos (capacidade de horas por dia/habilidade)
     recursos_df = pd.read_excel(excel_path, sheet_name="Recursos")
+    # lê a aba de Paradas (dias em que o equipamento pode parar)
     paradas_df = pd.read_excel(excel_path, sheet_name="Paradas")
 
     # 2. calcular demanda_horas por tarefa (Duração * Quantidade) 
@@ -88,65 +93,97 @@ def create_solution(excel_path: str) -> dict:
 
     # soma a duração (tempo de ocupação do equipamento) por OS
     duracao_os = tarefas_df.groupby("OS")["Duração"].sum().reset_index()
+    # renomeia a coluna para refletir o cálculo
     duracao_os = duracao_os.rename(columns={"Duração": "Duracao_continua"})
-
 
     # junta a duração contínua à tabela principal de OS
     os_df = os_df.merge(duracao_os, on="OS", how="left")
-    
 
+ 
     # 5. Ordenar por prioridade e duração contínua e transofmrar prioridade em números!!
-    prioridade = {"Z": 1, "A": 2, "B": 3, "C": 4}
+
+    # mapeamento da prioridade textual para numérica (Z=1, A=2, etc.prioridade = {"Z": 1, "A": 2, "B": 3, "C": 4}
     os_df["Prioridade_num"] = os_df["Prioridade"].map(prioridade)
 
     # ordenadas por Prioridade_num e Duracao_continua, respectivamente Z, A, B e C e OS com menor duração 1° 
-
+    # ordena as OS: Primeiro pela Prioridade (ascendente), depois pela Duração Contínua (ascendente)
     os_ordenadas = os_df.sort_values(
         by=["Prioridade_num", "Duracao_continua"], ascending=[True, True]
     )
 
     # 6. Criar estrutura de capacidade por dia e habilidade
     # estrutura: (dia, habilidade) ==> HH_Disponivel
+    
     capacidade = {}
 
     for linha in recursos_df.itertuples():
-        capacidade[(linha.Dia, linha.Habilidade)] = linha.HH_Disponivel
+        dia = linha.Dia
+        habilidade = linha.Habilidade
+        hora_disp = linha.HH_Disponivel
+        # preenche o dicionário de capacidade
+        capacidade[(dia, habilidade)] = hora_disp
 
+    # acompanhamento do uso de horas por dia/habilidade
+    # estrutura: (dia, habilidade) ==> HH_Utilizadas
     uso = {}
+
+    # dias disponíveis no backlog
+    # lista dos dias no cronograma, ordenada (Dia_1, Dia_2, ...)
     dias_disponiveis = sorted(recursos_df["Dia"].unique())
 
-    # ---------------- 7. dias de parada ----------------
+    # 7. encontrando os dias de parada
+    # filtra e obtém a lista de dias marcados como "Sim" para Parada
     dias_parada = paradas_df.loc[paradas_df["Parada"] == "Sim", "Dia"].tolist()
 
-    # ---------------- 8. programação das OS ----------------
-    programacao = {}
-    nao_programadas = []
+    # 8. Loop principal para programar as OS
+    
+    programacao = {}      # OS ==> Dia em que foi programada
+    nao_programadas = []  # OS que não deram para nenhum dia
 
+    # itera sobre as OS na ordem de prioridade
     for os_linha in os_ordenadas.itertuples():
         os_id = os_linha.OS
         condicao = os_linha.Condição
         predecessora = os_linha.Predecessora
+
+        # 8.1 quanto horas essa OS precisa de cada habilidade?
         horas_p_habilidade = demanda_por_os.get(os_id, {})
 
+        # 8.2 quais dias são possíveis para essa OS?
         if condicao == "Parada":
+            # OS de parada só pode ser alocada em dias de parada
             dias_possiveis = list(dias_parada)
         else:
-            dias_possiveis = [d for d in dias_disponiveis if d not in dias_parada]
+            # OS "Operando" só pode em dias que NÃO são de parada
+            dias_possiveis = []
+            for dia in dias_disponiveis:
+                if dia not in dias_parada:
+                    dias_possiveis.append(dia)
 
+        # 8.3 se não existe nenhum dia disponível adiciona na lista de não programadas
         if not dias_possiveis:
             nao_programadas.append(os_id)
             continue
 
-        dia_minimo = None
+        # 8.4 tratar as predecessoras
+
+        dia_minimo = None  # começa vazio
 
         if tem_predecessora(predecessora):
+            # verifica em que dia a predecessora foi programada
             dia_predecessora = programacao.get(predecessora)
+            
+            # se a predecessora não foi programada, não consigo rodar a OS
             if dia_predecessora is None:
                 nao_programadas.append(os_id)
                 continue
-            dia_minimo = extrair_num_do_dia(dia_predecessora)
+            else:
+                # o dia mínimo para esta OS é o dia seguinte ao da predecessora (por convenção, extrai o número)
+                dia_minimo = extrair_num_do_dia(dia_predecessora)
 
-        dia_escolhido = None
+        # 8.5 procurar algum dia_escolhido dentre os possíveis 
+        dia_escolhido = None  # começa vazio 
+
         for dia in dias_possiveis:
             numero_dia = extrair_num_do_dia(dia)
 
@@ -190,82 +227,81 @@ def create_solution(excel_path: str) -> dict:
         # 8.8 atualizar a programação da OS
         programacao[os_id] = dia_escolhido
 
-    # 9. calculo das metricas
-    
-    # 9.1. contagem de OS programadas
-    # filtra o DataFrame original de OS para apenas as que foram programadas
-    os_programadas = os_df[os_df["OS"].isin(programacao.keys())]
 
-    # conta o número total de OS programadas
-    n_os = len(os_programadas)
+    # 9. calculo das metricas
 
-    # 9.2. contagem de OS por prioridade
-    # conta a distribuição de OS programadas por Prioridade
-    contagens = os_programadas["Prioridade"].value_counts()
-    n_Z = int(contagens.get("Z", 0))
-    n_A = int(contagens.get("A", 0))
-    n_B = int(contagens.get("B", 0))
-    n_C = int(contagens.get("C", 0))
+    # 9.1. contagem de OS programadas
+    # filtra o DataFrame original de OS para apenas as que foram programadas
+    os_programadas = os_df[os_df["OS"].isin(programacao.keys())]
+    # conta o número total de OS programadas
+    n_os = len(os_programadas)
 
+    # 9.2. contagem de OS por prioridade
+    # conta a distribuição de OS programadas por Prioridade
+    contagens_prioridade = os_programadas["Prioridade"].value_counts()
+    n_Z = int(contagens_prioridade.get("Z", 0))
+    n_A = int(contagens_prioridade.get("A", 0))
+    n_B = int(contagens_prioridade.get("B", 0))
+    n_C = int(contagens_prioridade.get("C", 0))
 
-    # 9.3. capacidade total por habilidade
-    # calcula a capacidade total de horas por Habilidade (soma de todos os dias)
-    capacidade_por_hab = {}
-    for (_, hab), horas in capacidade.items():
-        capacidade_por_hab[hab] = capacidade_por_hab.get(hab, 0) + horas
+    # 9.3. capacidade total por habilidade
+    # calcula a capacidade total de horas por Habilidade (soma de todos os dias)
+    capacidade_por_hab = {}
+    for (dia, habilidade), horas_cap in capacidade.items():
+        capacidade_por_hab[habilidade] = capacidade_por_hab.get(habilidade, 0) + horas_cap
 
+    # 9.4. uso total por habilidade
+    # calcula o uso total de horas por Habilidade (soma de todos os dias)
+    uso_por_hab = {}
+    for (dia, habilidade), horas_usadas in uso.items():
+        uso_por_hab[habilidade] = uso_por_hab.get(habilidade, 0) + horas_usadas
 
-    # 9.4. uso total por habilidade
-    # calcula o uso total de horas por Habilidade (soma de todos os dias)
-    uso_por_hab = {}
-    for (_, hab), horas in uso.items():
-        uso_por_hab[hab] = uso_por_hab.get(hab, 0) + horas
+    # 9.5. utilização percentual
+    # calcula a utilização percentual para cada Habilidade
+    utilizacao = {}
+    for habilidade, cap_total in capacidade_por_hab.items():
+        usado = uso_por_hab.get(habilidade, 0)
+        if cap_total > 0:
+            # utilização = (usado / Capacidade Total) * 100
+            perc = (usado / cap_total) * 100
+        else:
+            perc = 0.0
+        # formata a porcentagem com duas casas decimais
+        utilizacao[habilidade] = f"{round(perc, 2)}%"
 
-
-    # 9.5. utilização percentual
-    # calcula a utilização percentual para cada Habilidade
-    utilizacao = {}
-    for hab, cap_total in capacidade_por_hab.items():
-        usado = uso_por_hab.get(hab, 0)
-        # utilização = (usado / Capacidade Total) * 100
-        perc = (usado / cap_total) * 100 if cap_total else 0
-        # formata a porcentagem com duas casas decimais
-        utilizacao[hab] = f"{round(perc, 2)}%"
-
-    # 9.6. formatação da solução de programação
-    # cria o dicionário de solução no formato de saída
-    solution_dict = {}
-    for os_id, dia in programacao.items():
-        # extrai o número do dia para o formato final
-        numero_dia = extrair_num_do_dia(dia)
-        solution_dict[os_id] = str(numero_dia)
-
+    # 9.6. formatação da solução de programação
+    # cria o dicionário de solução no formato de saída
+    solution_dict = {}
+    for os_id, dia in programacao.items():
+        # extrai o número do dia para o formato final
+        numero_dia = extrair_num_do_dia(dia)
+        solution_dict[os_id] = str(numero_dia)
 
     # 9.7. estrutura de saída final
-    # estrutura de saída final, contendo a programação e as métricas
-    output_solution = {
-        "solution": solution_dict,
-        "metrics": {
-            "n_os": n_os,
-            "n_Z": n_Z,
-            "n_A": n_A,
-            "n_B": n_B,
-            "n_C": n_C,
-            "utilization": utilizacao
-        }
-    }
+    # estrutura de saída final, contendo a programação e as métricas
+    output_solution = {
+        "solution": solution_dict,
+        "metrics": {
+            "n_os": n_os,
+            "n_Z": n_Z,
+            "n_A": n_A,
+            "n_B": n_B,
+            "n_C": n_C,
+            "utilization": utilizacao
+        }
+    }
 
-    return output_solution
+    return output_solution
 
 
 # execução direta
 if __name__ == "__main__":
-    caminho_arquivo = r"C:\Users\isaca\Desktop\desafio\data\backlog_desafio_500.xlsx"
-    resultado = create_solution(caminho_arquivo)
+    # define o caminho do arquivo Excel
+    caminho_arquivo = r"C:\Users\isaca\Desktop\desafio\data\backlog_desafio_500.xlsx"
+    # chama a função principal para gerar a solução
+    resultado = create_solution(caminho_arquivo)
 
-    print("\n=== OUTPUT SOLUTION ===")
-    from pprint import pprint
-    pprint(resultado)
-
-
-
+    print("\n=== OUTPUT SOLUTION ===")
+    from pprint import pprint
+    # imprime o dicionário de resultados de forma formatada
+    pprint(resultado)
