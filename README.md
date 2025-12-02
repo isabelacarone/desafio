@@ -11,7 +11,7 @@ O algoritmo determina em qual dia cada OS deve ser alocada, respeitando as restr
 
 ---
 
-## Tecnologias usadas
+## Tecnologias utilizadas
 
 - **Python 3.12+**
 - **Pandas** (tratamento e agregação dos dados)
@@ -33,7 +33,6 @@ desafio/
 │   └── doc.md
 └── README.md
 ```
-
 
 ---
 
@@ -74,4 +73,37 @@ O algoritmo create_solution() processa as planilhas de backlog e executa automat
 6) Verificar disponibilidade de recursos
 7) Programar ou rejeitar a OS e calcular métricas finais
 
+## Fluxograma do processo - BPM 
 
+<img width="2876" height="3344" alt="fluxograma" src="https://github.com/user-attachments/assets/159cdf9a-4d2b-44ee-a224-b96cc7ba901e" />
+
+
+## Estrutura da saída da solução
+```bash
+{
+  "solution": {
+    "OS_10": "1",
+    "OS_381": "2",
+    ...
+  },
+  "metrics": {
+    "n_os": 32,
+    "n_Z": 10,
+    "n_A": 10,
+    "n_B": 7,
+    "n_C": 5,
+    "utilization": {
+      "Mecânico": "86.46%",
+      "Elétrico": "86.51%",
+      "Soldador": "92.86%",
+      "Lubrificador": "93.38%"
+    }
+  }
+}
+```
+
+
+## Documentação complementar 
+```bash
+/docs/doc.md
+```
