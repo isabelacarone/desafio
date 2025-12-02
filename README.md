@@ -32,6 +32,7 @@ desafio/
 |   └── fluxograma.png
 │   └── doc.md
 └── README.md
+└── requirements.txt
 ```
 
 ---
