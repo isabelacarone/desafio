@@ -197,19 +197,80 @@ def create_solution(excel_path: str) -> dict:
         # 8.8 atualizar a programação da OS
         programacao[os_id] = dia_escolhido
 
-    # 9. volta 
-    return {
-        "programacao": programacao,
-        "nao_programadas": nao_programadas,
+
+    # 9. calculo das metricas
+
+    # 9.1) Quantidade total de OS programadas
+    os_programadas = os_df[os_df["OS"].isin(programacao.keys())]
+    n_os = len(os_programadas)
+
+    # 9.2) Quantidade de OS programadas por prioridade
+    contagens_prioridade = os_programadas["Prioridade"].value_counts()
+
+    n_Z = int(contagens_prioridade.get("Z", 0))
+    n_A = int(contagens_prioridade.get("A", 0))
+    n_B = int(contagens_prioridade.get("B", 0))
+    n_C = int(contagens_prioridade.get("C", 0))
+
+    # 9.3) Utilização dos recursos (por habilidade)
+    # soma capacidade total por habilidade
+    capacidade_por_hab = {}
+    for (dia, habilidade), horas_cap in capacidade.items():
+        capacidade_por_hab[habilidade] = capacidade_por_hab.get(habilidade, 0) + horas_cap
+
+    # soma horas usadas por habilidade
+    uso_por_hab = {}
+    for (dia, habilidade), horas_usadas in uso.items():
+        uso_por_hab[habilidade] = uso_por_hab.get(habilidade, 0) + horas_usadas
+
+    # calcula percentual de utilização por habilidade
+    utilizacao = {}
+    for habilidade, cap_total in capacidade_por_hab.items():
+        usado = uso_por_hab.get(habilidade, 0)
+        if cap_total > 0:
+            perc = (usado / cap_total) * 100
+        else:
+            perc = 0.0
+        utilizacao[habilidade] = f"{round(perc, 2)}%"  # ex.: "85.32%"
+
+    # --------------------------------------------------
+    # 10) Montar o output no formato pedido
+    # --------------------------------------------------
+
+    # solution: OS -> número do dia (string), ex.: "1", "3"...
+    solution_dict = {}
+    for os_id, dia in programacao.items():
+        numero_dia = extrair_num_do_dia(dia)  # "Dia_3" -> 3
+        solution_dict[os_id] = str(numero_dia)
+
+    output_solution = {
+        "solution": solution_dict,
+        "metrics": {
+            "n_os": n_os,
+            "n_Z": n_Z,
+            "n_A": n_A,
+            "n_B": n_B,
+            "n_C": n_C,
+            "utilization": utilizacao
+        },
+        "extras": {
+            "observations": "Programação gerada automaticamente respeitando prioridades, paradas, predecessoras e capacidade de recursos.",
+            "plots": None,
+            "any_additional_information": None
+        }
     }
+
+    return output_solution
+
+
+
+
 
 
 if __name__ == "__main__":
     caminho_arquivo = r"C:\Users\isaca\Desktop\desafio\data\backlog_desafio_500.xlsx"
     resultado = create_solution(caminho_arquivo)
 
-    print("\nProgramação gerada (algumas OS):")
-    print(list(resultado["programacao"].items())[:20])
+    print("\n=== OUTPUT SOLUTION ===")
+    print(resultado)
 
-    print("\nOS não programadas (algumas):")
-    print(resultado["nao_programadas"][:20])
