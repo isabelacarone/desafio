@@ -273,8 +273,9 @@ def create_solution(excel_path: str) -> dict:
 # execução direta
 if __name__ == "__main__":
     # usa caminho RELATIVO à pasta do projeto
+    
     caminho_arquivo = os.path.join("data", "backlog_desafio_500.xlsx")
     resultado = create_solution(caminho_arquivo)
 
-    print("\n=== OUTPUT SOLUTION ===")
+    print("\n=== resultado ===")
     pprint(resultado)

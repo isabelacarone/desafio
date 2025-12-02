@@ -207,9 +207,3 @@ Essas informações permitem avaliar o desempenho do planejamento e a eficiênci
 
 O algoritmo implementado fornece uma solução robusta e determinística para a programação de Ordens de Serviço dentro de um ambiente de restrições reais, garantindo a execução das atividades mais relevantes primeiro, respeitando dependências técnicas e sem ultrapassar capacidades operacionais.
 
-A arquitetura adotada permite expansões futuras, incluindo simulações de cenários, reprogramações dinâmicas e integração com sistemas externos.
-
-
-Além do diagrama em Mermaid, o fluxograma também foi gerado como imagem PNG para uso em relatórios, apresentações ou anexos de documentação:
-
-![Fluxograma do Algoritmo](fluxograma_pcm.png)
