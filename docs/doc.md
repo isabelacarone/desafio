@@ -203,7 +203,3 @@ Essas informações permitem avaliar o desempenho do planejamento e a eficiênci
 
 ---
 
-## 10. Conclusão
-
-O algoritmo implementado fornece uma solução robusta e determinística para a programação de Ordens de Serviço dentro de um ambiente de restrições reais, garantindo a execução das atividades mais relevantes primeiro, respeitando dependências técnicas e sem ultrapassar capacidades operacionais.
-
