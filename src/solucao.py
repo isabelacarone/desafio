@@ -1,5 +1,7 @@
+import os
 import pandas as pd
 from pprint import pprint
+
 
 def extrair_num_do_dia(nome_dia: str) -> int:
     '''
@@ -14,7 +16,6 @@ def extrair_num_do_dia(nome_dia: str) -> int:
         numero = int(partes[-1])           
         return numero
     except:
-    
         # retorna false se a conversão falhar (ex: "Dia_X")
         return False
 
@@ -47,8 +48,7 @@ def create_solution(excel_path: str) -> dict:
 
     print(f"Realizando a leitura dos arquivos Excel em: {excel_path}")
 
-# 1. leitura das abas 
-
+    # 1. leitura das abas 
     os_df = pd.read_excel(excel_path, sheet_name="OS")
     tarefas_df = pd.read_excel(excel_path, sheet_name="Tarefas")
     recursos_df = pd.read_excel(excel_path, sheet_name="Recursos")
@@ -61,11 +61,9 @@ def create_solution(excel_path: str) -> dict:
     # calcula a demanda total de horas de trabalho para cada tarefa
     tarefas_df["Demanda_horas"] = tarefas_df["Duração"] * tarefas_df["Quantidade"]
 
-    
     # 3. sum() Demanda_horas por OS e habilidade
-
     # agrupa e soma a Demanda_horas para obter o total por OS e Habilidade
-    demanda_os_hab_df = tarefas_df.groupby(["OS", "Habilidade"]) ["Demanda_horas"].sum().reset_index()
+    demanda_os_hab_df = tarefas_df.groupby(["OS", "Habilidade"])["Demanda_horas"].sum().reset_index()
     
     # criar estrutura de demanda por OS e habilidade
     # estrutura: {OS_ID: {Habilidade: Horas_Necessárias}}
@@ -84,24 +82,19 @@ def create_solution(excel_path: str) -> dict:
         # armazena a demanda de horas para a habilidade específica
         demanda_por_os[os_id][habilidade] = horas
 
-
     # 4. cálculo da duração contínua por OS
-
     # soma a duração (tempo de ocupação do equipamento) por OS
     duracao_os = tarefas_df.groupby("OS")["Duração"].sum().reset_index()
     duracao_os = duracao_os.rename(columns={"Duração": "Duracao_continua"})
 
-
     # junta a duração contínua à tabela principal de OS
     os_df = os_df.merge(duracao_os, on="OS", how="left")
     
-
     # 5. Ordenar por prioridade e duração contínua e transofmrar prioridade em números!!
     prioridade = {"Z": 1, "A": 2, "B": 3, "C": 4}
     os_df["Prioridade_num"] = os_df["Prioridade"].map(prioridade)
 
     # ordenadas por Prioridade_num e Duracao_continua, respectivamente Z, A, B e C e OS com menor duração 1° 
-
     os_ordenadas = os_df.sort_values(
         by=["Prioridade_num", "Duracao_continua"], ascending=[True, True]
     )
@@ -109,7 +102,6 @@ def create_solution(excel_path: str) -> dict:
     # 6. Criar estrutura de capacidade por dia e habilidade
     # estrutura: (dia, habilidade) ==> HH_Disponivel
     capacidade = {}
-
     for linha in recursos_df.itertuples():
         capacidade[(linha.Dia, linha.Habilidade)] = linha.HH_Disponivel
 
@@ -128,7 +120,6 @@ def create_solution(excel_path: str) -> dict:
     # 8. Loop principal para programar as OS
     programacao = {}     # OS ==> Dia em que foi programada
     nao_programadas = [] # OS que não deram para nenhum dia
-
 
     # itera sobre as OS na ordem de prioridade
     for os_linha in os_ordenadas.itertuples():
@@ -156,7 +147,6 @@ def create_solution(excel_path: str) -> dict:
             continue
 
         # 8.4 tratar as predecessoras
-
         dia_minimo = None # começa vazio
 
         if tem_predecessora(predecessora):
@@ -172,7 +162,6 @@ def create_solution(excel_path: str) -> dict:
                 dia_minimo = extrair_num_do_dia(dia_predecessora)
 
         # 8.5 procurar algum dia_escolhido dentre os possíveis 
-
         dia_escolhido = None  # começa vazio 
         for dia in dias_possiveis:
             numero_dia = extrair_num_do_dia(dia)
@@ -234,20 +223,17 @@ def create_solution(excel_path: str) -> dict:
     n_B = int(contagens.get("B", 0))
     n_C = int(contagens.get("C", 0))
 
-
     # 9.3. capacidade total por habilidade
     # calcula a capacidade total de horas por Habilidade (soma de todos os dias)
     capacidade_por_hab = {}
     for (_, hab), horas in capacidade.items():
         capacidade_por_hab[hab] = capacidade_por_hab.get(hab, 0) + horas
 
-
     # 9.4. uso total por habilidade
     # calcula o uso total de horas por Habilidade (soma de todos os dias)
     uso_por_hab = {}
     for (_, hab), horas in uso.items():
         uso_por_hab[hab] = uso_por_hab.get(hab, 0) + horas
-
 
     # 9.5. utilização percentual
     # calcula a utilização percentual para cada Habilidade
@@ -266,7 +252,6 @@ def create_solution(excel_path: str) -> dict:
         # extrai o número do dia para o formato final
         numero_dia = extrair_num_do_dia(dia)
         solution_dict[os_id] = str(numero_dia)
-
 
     # 9.7. estrutura de saída final
     # estrutura de saída final, contendo a programação e as métricas
@@ -287,12 +272,9 @@ def create_solution(excel_path: str) -> dict:
 
 # execução direta
 if __name__ == "__main__":
-    caminho_arquivo = r"C:\Users\isaca\Desktop\desafio\data\backlog_desafio_500.xlsx"
+    # usa caminho RELATIVO à pasta do projeto
+    caminho_arquivo = os.path.join("data", "backlog_desafio_500.xlsx")
     resultado = create_solution(caminho_arquivo)
 
     print("\n=== OUTPUT SOLUTION ===")
-    from pprint import pprint
     pprint(resultado)
-
-
-
