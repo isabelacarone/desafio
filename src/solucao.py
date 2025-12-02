@@ -1,4 +1,5 @@
 import pandas as pd
+from pprint import pprint
 
 def extrair_num_do_dia(nome_dia: str) -> int:
     '''
@@ -112,41 +113,67 @@ def create_solution(excel_path: str) -> dict:
     for linha in recursos_df.itertuples():
         capacidade[(linha.Dia, linha.Habilidade)] = linha.HH_Disponivel
 
+    # acompanhamento do uso de horas por dia/habilidade
+    # estrutura: (dia, habilidade) ==> HH_Utilizadas
     uso = {}
+
+    # dias disponíveis no backlog
+    # lista dos dias no cronograma, ordenada (Dia_1, Dia_2, ...)
     dias_disponiveis = sorted(recursos_df["Dia"].unique())
 
-    # ---------------- 7. dias de parada ----------------
+    # 7. encontrando os dias de parada
+    # filtra e obtém a lista de dias marcados como "Sim" para Parada
     dias_parada = paradas_df.loc[paradas_df["Parada"] == "Sim", "Dia"].tolist()
 
-    # ---------------- 8. programação das OS ----------------
-    programacao = {}
-    nao_programadas = []
+    # 8. Loop principal para programar as OS
+    programacao = {}     # OS ==> Dia em que foi programada
+    nao_programadas = [] # OS que não deram para nenhum dia
 
+
+    # itera sobre as OS na ordem de prioridade
     for os_linha in os_ordenadas.itertuples():
         os_id = os_linha.OS
         condicao = os_linha.Condição
         predecessora = os_linha.Predecessora
+
+        # 8.1 quanto horas essa OS precisa de cada habilidade?
         horas_p_habilidade = demanda_por_os.get(os_id, {})
 
+        # 8.2 quais dias são possíveis para essa OS?
         if condicao == "Parada":
+            # OS de parada só pode ser alocada em dias de parada
             dias_possiveis = list(dias_parada)
         else:
-            dias_possiveis = [d for d in dias_disponiveis if d not in dias_parada]
+            # OS "Operando" só pode em dias que NÃO são de parada
+            dias_possiveis = []
+            for dia in dias_disponiveis:
+                if dia not in dias_parada:
+                    dias_possiveis.append(dia)
 
+        # 8.3 se não existe nenhum dia disponível adiciona na lista de não programadas
         if not dias_possiveis:
             nao_programadas.append(os_id)
             continue
 
-        dia_minimo = None
+        # 8.4 tratar as predecessoras
+
+        dia_minimo = None # começa vazio
 
         if tem_predecessora(predecessora):
+            # verifica em que dia a predecessora foi programada
             dia_predecessora = programacao.get(predecessora)
+            
+            # se a predecessora não foi programada, não consigo rodar a OS
             if dia_predecessora is None:
                 nao_programadas.append(os_id)
                 continue
-            dia_minimo = extrair_num_do_dia(dia_predecessora)
+            else:
+                # o dia mínimo para esta OS é o dia seguinte ao da predecessora (por convenção, extrai o número)
+                dia_minimo = extrair_num_do_dia(dia_predecessora)
 
-        dia_escolhido = None
+        # 8.5 procurar algum dia_escolhido dentre os possíveis 
+
+        dia_escolhido = None  # começa vazio 
         for dia in dias_possiveis:
             numero_dia = extrair_num_do_dia(dia)
 
