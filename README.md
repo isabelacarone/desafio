@@ -56,7 +56,7 @@ python -m venv .venv
 source .venv/bin/activate
 ```
 
-### 3. Instalar depedências 
+### 3. Instalar dependências 
 ```bash
 pip install pandas openpyxl
 ```
