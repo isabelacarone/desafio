@@ -1,41 +1,35 @@
-# Documentação - Sistema de Programação de Ordens de Serviço (OS)
+# Documentação Técnica — Sistema de Programação de Ordens de Serviço (OS)
 
-### Visão Geral
+## 1. Visão Geral
 
-A função `create_solution()` automatiza a programação semanal das Ordens de Serviço (OS), considerando múltiplas restrições operacionais, tais como:
+Este documento apresenta a estrutura lógica e funcional do algoritmo responsável pela programação semanal de Ordens de Serviço (OS). A função `create_solution()` realiza a alocação automática das OS baseando-se em critérios operacionais, prioridades e disponibilidade de recursos.
+
+A solução proposta considera os seguintes elementos:
 
 * Prioridade das OS (Z, A, B, C)
 * Condição de execução (Operando / Parada)
-* Dependência de predecessoras
-* Capacidade de horas disponíveis por habilidade
+* Dependência entre OS (Predecessoras)
+* Capacidade disponível por habilidade e por dia
+* Métricas finais de execução e utilização
 
-A solução final devolve:
+O resultado final retorna um dicionário contendo:
 
-* O dia programado de execução para cada OS
-* Métricas de atendimento por prioridade
-* Percentual de utilização dos recursos
-
----
-
-## 🔁 Estrutura Geral da Solução
-
-A função está dividida em **4 grandes blocos lógicos**:
-
-```
-1) Ler o Excel e preparar os dados
-2) Calcular demanda de horas e duração das OS
-3) Executar a lógica de programação (alocar OS em dias possíveis)
-4) Gerar métricas e montar o objeto output_solution
-```
+* O dia programado de cada OS
+* Contagens agregadas por prioridade
+* Utilização percentual dos recursos disponíveis
 
 ---
 
-## 🔧 1. Funções Auxiliares
+## 2. Funções Auxiliares
 
-### 1.1 `extrair_num_do_dia(nome_dia: str) -> int`
+### 2.1 `extrair_num_do_dia(nome_dia: str)`
 
 ```python
 def extrair_num_do_dia(nome_dia: str) -> int:
+    '''
+    Retorna apenas o número do dia a partir de uma string no formato "Dia_X".
+    Caso não seja possível, retorna False.
+    '''
     try:
         partes = str(nome_dia).split("_")
         numero = int(partes[-1])
@@ -44,23 +38,16 @@ def extrair_num_do_dia(nome_dia: str) -> int:
         return False
 ```
 
-#### Finalidade
+A função converte rótulos de dia do Excel para valores inteiros, permitindo comparações diretas nas validações de predecessoras e sequenciamento de execução.
 
-* Converte strings como `"Dia_3"` em `3`.
-* Garante comparações numéricas corretas entre datas.
-
-📌 **Exemplo de uso:**
-
-```
-'Dia_5' → 5
-```
-
----
-
-### 1.2 `tem_predecessora(predecessora) -> bool`
+### 2.2 `tem_predecessora(predecessora)`
 
 ```python
 def tem_predecessora(predecessora) -> bool:
+    '''
+    Verifica se uma OS possui uma predecessora válida.
+    Valores vazios ou NaN indicam ausência de predecessora.
+    '''
     if pd.isna(predecessora):
         return False
     if isinstance(predecessora, str) and predecessora.strip() == "":
@@ -68,156 +55,133 @@ def tem_predecessora(predecessora) -> bool:
     return True
 ```
 
-#### Finalidade
-
-* Identifica corretamente se uma OS possui predecessora válida.
-* Evita que valores vazios sejam tratados como dependências.
+Evita que células vazias sejam interpretadas como dependências válidas, o que resultaria em OS marcadas incorretamente como não programáveis.
 
 ---
 
-## 🗂️ 2. Leitura e Preparação dos Dados
-
-São carregadas as 4 abas do Excel:
-
-* **OS** → identificação, prioridade, condição e predecessora
-* **Tarefas** → tarefas por OS, habilidades e duração
-* **Recursos** → disponibilidade por habilidade/dia
-* **Paradas** → define em quais dias a planta estará parada
+## 3. Leitura dos Dados do Excel
 
 ```python
-os_df = pd.read_excel(..., sheet_name="OS")
-tarefas_df = pd.read_excel(..., sheet_name="Tarefas")
-recursos_df = pd.read_excel(..., sheet_name="Recursos")
-paradas_df = pd.read_excel(..., sheet_name="Paradas")
+os_df = pd.read_excel(excel_path, sheet_name="OS")
+tarefas_df = pd.read_excel(excel_path, sheet_name="Tarefas")
+recursos_df = pd.read_excel(excel_path, sheet_name="Recursos")
+paradas_df = pd.read_excel(excel_path, sheet_name="Paradas")
 ```
+
+As planilhas trazem informações essenciais sobre as OS, suas tarefas, capacidades de recursos e dias de parada.
 
 ---
 
-## ⏱️ 3. Demanda de Horas por OS
+## 4. Cálculo da Demanda de Horas por OS
 
-### 3.1 Cálculo base
+### 4.1 Demanda por Tarefa
 
 ```python
 tarefas_df["Demanda_horas"] = tarefas_df["Duração"] * tarefas_df["Quantidade"]
 ```
 
-Cada tarefa passa a ter o total de horas necessárias.
+Cada tarefa possui uma duração e quantidade de execução. O produto desses valores define a demanda horária.
 
-### 3.2 Agrupamento por OS e habilidade
+### 4.2 Consolidação por OS e Habilidade
 
 ```python
 demanda_os_hab_df = tarefas_df.groupby(["OS", "Habilidade"])["Demanda_horas"].sum().reset_index()
 ```
 
-Resultado esperado:
+Permite visualizar quantas horas de cada habilidade uma OS necessita ao longo de sua execução.
 
-```
-OS_10 → Mecânico: 12h | Elétrico: 4h
-```
-
-### 3.3 Conversão em dicionário
+### 4.3 Transformação em Estrutura de Acesso Rápido
 
 ```python
-demanda_por_os = { ... }
+demanda_por_os = {}
+for linha in demanda_os_hab_df.itertuples():
+    os_id = linha.OS
+    habilidade = linha.Habilidade
+    horas = linha.Demanda_horas
+    demanda_por_os.setdefault(os_id, {})[habilidade] = horas
 ```
 
-Fica assim:
-
-```python
-{
-  "OS_10": {"Mecânico": 12, "Elétrico": 4},
-  "OS_51": {"Soldador": 6}
-}
-```
-
-Esse formato acelera as verificações no loop principal.
+Essa estrutura otimiza o acesso durante o loop principal da programação.
 
 ---
 
-## 🎯 4. Ordenação das OS
+## 5. Priorização e Ordenação das OS
 
-Prioridades textuais são convertidas em números:
+As OS são ordenadas de acordo com dois critérios:
 
-```
-Z = 1  |  A = 2  |  B = 3  |  C = 4
-```
+1. Prioridade (Z > A > B > C)
+2. Menor duração contínua dentro da mesma categoria
 
-Assim, as OS são processadas nesta ordem:
+Isso garante que OS críticas e rápidas sejam priorizadas.
 
-1. Maior criticidade
-2. Menor duração contínua
+---
+
+## 6. Capacidade de Recursos
 
 ```python
-os_ordenadas = os_df.sort_values(by=["Prioridade_num", "Duracao_continua"])
+capacidade[(dia, habilidade)] = horas_disponiveis
+```
+
+Cada recurso possui uma quantidade de horas disponíveis por dia. Conforme OS são programadas, essas horas são debitadas em `uso[(dia, habilidade)]`.
+
+---
+
+## 7. Fluxo de Programação
+
+A seguir, apresenta-se o fluxograma lógico que orienta o algoritmo:
+
+```
+INÍCIO
+ ↓
+Ler planilhas do Excel
+ ↓
+Calcular demanda de horas por OS
+ ↓
+Ordenar OS por prioridade e duração
+ ↓
+Criar estruturas de capacidade e uso
+ ↓
+Para cada OS ordenada:
+    ↓
+    Determinar dias possíveis conforme condição
+    ↓
+    Possui predecessora?
+        ↓ Sim                  ↓ Não
+   Predecessora programada?   Prosseguir
+        ↓ Sim   ↓ Não
+    Definir dia mínimo   Marcar OS como não programada
+    ↓
+    Testar dias possíveis
+    ↓
+    Há capacidade para todas as habilidades?
+        ↓ Sim                  ↓ Não
+  Programar OS no dia      Testar próximo dia
+    ↓
+Atualizar uso dos recursos
+ ↓
+Calcular métricas finais
+ ↓
+Gerar estrutura output_solution
+ ↓
+FIM
 ```
 
 ---
 
-## 🧠 5. Programação Principal das OS
+## 8. Métricas Finais
 
-O algoritmo percorre cada OS e tenta encaixá‑la em um dia que respeite:
+O sistema calcula automaticamente:
 
-* Regras de parada/operando
-* Dependência de predecessoras
-* Disponibilidade de horas por habilidade
+* Total de OS programadas
+* Quantidade executada por prioridade
+* Percentual de utilização de cada habilidade disponível
 
-### 5.1 Seleção de dias possíveis
-
-```python
-if condicao == "Parada":
-    dias_possiveis = dias_parada
-else:
-    dias_possiveis = dias_sem_parada
-```
-
-### 5.2 Validação de predecessora
-
-Se a predecessora não foi programada antes → a OS é descartada nesta etapa.
-
-### 5.3 Verificação de capacidade
-
-```python
-horas_restantes = capacidade[(dia, habilidade)] - uso[(dia, habilidade)]
-```
-
-Se qualquer habilidade estourar, o dia é rejeitado.
-
-A primeira combinação válida é escolhida.
+Essas informações permitem avaliar o desempenho do planejamento e a eficiência no uso da mão-de-obra.
 
 ---
 
-## 📊 6. Métricas e Resultado Final
+## 9. Conclusão
 
-A saída segue o modelo solicitado:
+O algoritmo implementado fornece uma solução robusta e determinística para a programação de Ordens de Serviço dentro de um ambiente de restrições reais, garantindo a execução das atividades mais relevantes primeiro, respeitando dependências técnicas e sem ultrapassar capacidades operacionais.
 
-```python
-{
-  "solution": { "OS_10": "1", ... },
-  "metrics": {
-      "n_os": 32,
-      "n_Z": 10,
-      "utilization": {"Elétrico": "86.51%", ...}
-  },
-  "extras": { ... }
-}
-```
-
-### Métricas calculadas
-
-| Métrica               | Significado                 |
-| --------------------- | --------------------------- |
-| n_os                  | Nº total de OS programadas  |
-| n_Z / n_A / n_B / n_C | Quantidade por prioridade   |
-| utilization           | % de uso de cada habilidade |
-
----
-
-## ✅ Conclusão
-
-A função `create_solution()` implementa um **agendador determinístico** que respeita todas as regras operacionais e produz uma solução estruturada, auditável e facilmente integrável a outros sistemas.
-
-Essa documentação pode ser incluída diretamente em um **notebook Jupyter**, servindo como referência técnica oficial do projeto.
-
----
-
-📌 *Fim do documento.*
+A arquitetura adotada permite expansões futuras, incluindo simulações de cenários, reprogramações dinâmicas e integração com sistemas
