@@ -1,8 +1,13 @@
 # Sistema de Programação Automática de Ordens de Serviço (PCM)
 
-Este projeto implementa um algoritmo de programação semanal de Ordens de Serviço (OS), levando em consideração prioridades, restrições operacionais, predecessoras e a disponibilidade de recursos por habilidade.
+Este projeto implementa um sistema automatizado para programação semanal de Ordens de Serviço (OS), considerando:
 
-O objetivo é determinar **em qual dia cada OS deve ser realizada**.
+* Prioridades operacionais (Z, A, B, C)
+* Dias de parada e operação
+* Dependências entre OS (predecessoras)
+* Disponibilidade de recursos por habilidade
+
+O algoritmo determina em qual dia cada OS deve ser alocada, respeitando as restrições operacionais. 
 
 ---
 
@@ -17,11 +22,14 @@ O objetivo é determinar **em qual dia cada OS deve ser realizada**.
 ## Estrutura do projeto
 ```
 desafio/
+├── venv/ 
 ├── src/
 │   └── solucao.py
 ├── data/
 │   └── backlog_desafio_500.xlsx
 ├── docs/
+|   └── fluxograma.bpm
+|   └── fluxograma.png
 │   └── doc.md
 └── README.md
 ```
@@ -55,3 +63,15 @@ pip install pandas openpyxl
 ```bash
 pip install -r requirements.txt
 ```
+
+## Visão Geral do Sistema
+O algoritmo create_solution() processa as planilhas de backlog e executa automaticamente a programação das OS seguindo sete macroetapas:
+1) Ler os dados do Excel
+2) Calcular demanda de horas por OS e habilidade
+3) Calcular duração contínua por OS
+4) Ordenar por prioridade e tempo
+5) Avaliar restrições da OS (parada e predecessor)
+6) Verificar disponibilidade de recursos
+7) Programar ou rejeitar a OS e calcular métricas finais
+
+
