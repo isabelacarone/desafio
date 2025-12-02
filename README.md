@@ -1,4 +1,4 @@
-# Sistema de Programação Automática de Ordens de Serviço (PCM)
+# Otimização de Programação de Manutenção
 
 Este projeto implementa um sistema automatizado para programação semanal de Ordens de Serviço (OS), considerando:
 
@@ -30,8 +30,10 @@ desafio/
 ├── docs/
 |   └── fluxograma.bpm
 |   └── fluxograma.png
+|    └── doc.pdf
 │   └── doc.md
 └── README.md
+└── README.pdf
 └── requirements.txt
 ```
 
@@ -54,7 +56,7 @@ python -m venv .venv
 source .venv/bin/activate
 ```
 
-### 3. Instalar depedências 
+### 3. Instalar dependências 
 ```bash
 pip install pandas openpyxl
 ```

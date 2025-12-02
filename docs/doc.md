@@ -1,4 +1,4 @@
-# Documentação Técnica — Sistema de Programação de Ordens de Serviço (OS)
+# Documentação Técnica — Sistema de Programação de OS
 
 ## 1. Visão Geral
 
