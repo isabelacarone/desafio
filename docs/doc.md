@@ -126,49 +126,72 @@ Cada recurso possui uma quantidade de horas disponíveis por dia. Conforme OS s�
 
 ---
 
-## 7. Fluxo de Programação
+## 7. Algoritmo de Programação das OS
 
-A seguir, apresenta-se o fluxograma lógico que orienta o algoritmo:
+O algoritmo percorre as OS previamente ordenadas por prioridade e, para cada uma delas, executa o processo abaixo:
 
+1. Identifica os dias possíveis conforme a condição operacional da OS (Parada ou Operando).
+2. Se houver predecessora, verifica se ela já foi programada e restringe os dias a datas posteriores.
+
+3. Para cada dia elegível:
+    * Verifica se há capacidade suficiente de todas as habilidades requeridas.
+    * Caso o dia atenda às restrições, a OS é alocada.
+
+4. Se nenhum dia satisfizer os critérios, a OS é marcada como não programável.
+
+
+## 8. Fluxograma UML do Algoritmo
+
+O diagrama abaixo representa o fluxo lógico completo executado pelo algoritmo de programação de Ordens de Serviço. Ele demonstra, em sequência, as operações realizadas, os pontos de decisão e a relação entre cálculo de demanda, restrições operacionais e alocação de OS.
+
+```mermaid
+flowchart TD
+
+A[Início] --> B[Ler planilhas: OS, Tarefas, Recursos, Paradas]
+
+B --> C[Calcular demanda de horas por tarefa: Duracao × Quantidade]
+C --> D[Agrupar demanda por OS e habilidade]
+D --> E[Calcular duracao continua da OS]
+
+E --> F[Ordenar OS por prioridade e duracao]
+
+F --> G[Construir dicionario de capacidade por dia e habilidade]
+G --> H[Identificar dias disponiveis e dias de parada]
+
+H --> I[Iterar sobre OS ordenadas]
+
+I --> J{OS é de parada?}
+J -->|Sim| K[Definir dias possiveis = dias de parada]
+J -->|Nao| L[Definir dias possiveis = dias sem parada]
+
+K --> M{OS tem predecessora?}
+L --> M{OS tem predecessora?}
+
+M -->|Sim| N[Verificar se predecessora foi programada]
+M -->|Nao| P[Definir dia minimo vazio]
+
+N -->|Nao programada| X[Marcar OS como nao programada]
+N -->|Programada| O[Definir dia minimo baseado na predecessora]
+
+O --> Q[Tentar alocar OS em dias possiveis]
+P --> Q[Tentar alocar OS em dias possiveis]
+
+Q --> R{Cabe no dia?}
+
+R -->|Nao| Q[Verificar proximo dia]
+R -->|Sim| S[Alocar OS e atualizar uso de horas]
+
+S --> T[Registrar OS na programacao]
+T --> U[Fim do loop de programacao de OS]
+
+U --> V[Calcular metricas: n_OS, prioridades, utilizacao]
+V --> W[Gerar dicionario output_solution]
+
+W --> Z[Fim]
 ```
-INÍCIO
- ↓
-Ler planilhas do Excel
- ↓
-Calcular demanda de horas por OS
- ↓
-Ordenar OS por prioridade e duração
- ↓
-Criar estruturas de capacidade e uso
- ↓
-Para cada OS ordenada:
-    ↓
-    Determinar dias possíveis conforme condição
-    ↓
-    Possui predecessora?
-        ↓ Sim                  ↓ Não
-   Predecessora programada?   Prosseguir
-        ↓ Sim   ↓ Não
-    Definir dia mínimo   Marcar OS como não programada
-    ↓
-    Testar dias possíveis
-    ↓
-    Há capacidade para todas as habilidades?
-        ↓ Sim                  ↓ Não
-  Programar OS no dia      Testar próximo dia
-    ↓
-Atualizar uso dos recursos
- ↓
-Calcular métricas finais
- ↓
-Gerar estrutura output_solution
- ↓
-FIM
-```
-
 ---
 
-## 8. Métricas Finais
+## 9. Métricas Finais
 
 O sistema calcula automaticamente:
 
@@ -180,8 +203,13 @@ Essas informações permitem avaliar o desempenho do planejamento e a eficiênci
 
 ---
 
-## 9. Conclusão
+## 10. Conclusão
 
 O algoritmo implementado fornece uma solução robusta e determinística para a programação de Ordens de Serviço dentro de um ambiente de restrições reais, garantindo a execução das atividades mais relevantes primeiro, respeitando dependências técnicas e sem ultrapassar capacidades operacionais.
 
-A arquitetura adotada permite expansões futuras, incluindo simulações de cenários, reprogramações dinâmicas e integração com sistemas
+A arquitetura adotada permite expansões futuras, incluindo simulações de cenários, reprogramações dinâmicas e integração com sistemas externos.
+
+
+Além do diagrama em Mermaid, o fluxograma também foi gerado como imagem PNG para uso em relatórios, apresentações ou anexos de documentação:
+
+![Fluxograma do Algoritmo](fluxograma_pcm.png)
