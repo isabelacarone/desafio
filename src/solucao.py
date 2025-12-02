@@ -180,7 +180,7 @@ def create_solution(excel_path: str) -> dict:
                     cabe_no_dia = False
                     break
             
-            # se achou um dia bom para
+            # se achou um dia bom para o loop
             if cabe_no_dia: 
                 dia_escolhido = dia
                 break
@@ -200,30 +200,25 @@ def create_solution(excel_path: str) -> dict:
 
     # 9. calculo das metricas
 
-    # 9.1) Quantidade total de OS programadas
     os_programadas = os_df[os_df["OS"].isin(programacao.keys())]
     n_os = len(os_programadas)
 
-    # 9.2) Quantidade de OS programadas por prioridade
     contagens_prioridade = os_programadas["Prioridade"].value_counts()
-
     n_Z = int(contagens_prioridade.get("Z", 0))
     n_A = int(contagens_prioridade.get("A", 0))
     n_B = int(contagens_prioridade.get("B", 0))
     n_C = int(contagens_prioridade.get("C", 0))
 
-    # 9.3) Utilização dos recursos (por habilidade)
-    # soma capacidade total por habilidade
+    # capacidade total por habilidade
     capacidade_por_hab = {}
     for (dia, habilidade), horas_cap in capacidade.items():
         capacidade_por_hab[habilidade] = capacidade_por_hab.get(habilidade, 0) + horas_cap
 
-    # soma horas usadas por habilidade
+    # uso total por habilidade
     uso_por_hab = {}
     for (dia, habilidade), horas_usadas in uso.items():
         uso_por_hab[habilidade] = uso_por_hab.get(habilidade, 0) + horas_usadas
 
-    # calcula percentual de utilização por habilidade
     utilizacao = {}
     for habilidade, cap_total in capacidade_por_hab.items():
         usado = uso_por_hab.get(habilidade, 0)
@@ -231,16 +226,16 @@ def create_solution(excel_path: str) -> dict:
             perc = (usado / cap_total) * 100
         else:
             perc = 0.0
-        utilizacao[habilidade] = f"{round(perc, 2)}%"  # ex.: "85.32%"
+        utilizacao[habilidade] = f"{round(perc, 2)}%"
 
     # --------------------------------------------------
-    # 10) Montar o output no formato pedido
+    # 9) Montar output no formato pedido
     # --------------------------------------------------
 
-    # solution: OS -> número do dia (string), ex.: "1", "3"...
+    # solution: OS -> número do dia (string)
     solution_dict = {}
     for os_id, dia in programacao.items():
-        numero_dia = extrair_num_do_dia(dia)  # "Dia_3" -> 3
+        numero_dia = extrair_num_do_dia(dia)
         solution_dict[os_id] = str(numero_dia)
 
     output_solution = {
@@ -254,7 +249,7 @@ def create_solution(excel_path: str) -> dict:
             "utilization": utilizacao
         },
         "extras": {
-            "observations": "Programação gerada automaticamente respeitando prioridades, paradas, predecessoras e capacidade de recursos.",
+            "observations": "Programação gerada automaticamente respeitando prioridades, dias de parada, predecessoras e capacidade de recursos.",
             "plots": None,
             "any_additional_information": None
         }
@@ -263,14 +258,11 @@ def create_solution(excel_path: str) -> dict:
     return output_solution
 
 
-
-
-
-
+# Execução direta
 if __name__ == "__main__":
     caminho_arquivo = r"C:\Users\isaca\Desktop\desafio\data\backlog_desafio_500.xlsx"
     resultado = create_solution(caminho_arquivo)
 
     print("\n=== OUTPUT SOLUTION ===")
-    print(resultado)
-
+    from pprint import pprint
+    pprint(resultado)
