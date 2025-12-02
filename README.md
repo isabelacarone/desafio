@@ -30,8 +30,10 @@ desafio/
 ├── docs/
 |   └── fluxograma.bpm
 |   └── fluxograma.png
+|    └── doc.pdf
 │   └── doc.md
 └── README.md
+└── README.pdf
 └── requirements.txt
 ```
 
