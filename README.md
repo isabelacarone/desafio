@@ -1,4 +1,4 @@
-# Sistema de Programação Automática de Ordens de Serviço (PCM)
+# Otimização de Programação de Manutenção
 
 Este projeto implementa um sistema automatizado para programação semanal de Ordens de Serviço (OS), considerando:
 
