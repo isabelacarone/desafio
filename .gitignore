@@ -1,5 +1,4 @@
 # retira o venv 
 venv/
 .venv/
-.venv 
-venv
+__pycache__/
