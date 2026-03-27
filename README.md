@@ -13,7 +13,7 @@ O algoritmo determina em qual dia cada OS deve ser alocada, respeitando as restr
 
 ## Tecnologias utilizadas
 
-- **Python 3.12+**
+- **Python 3.12**
 - **Pandas** (tratamento e agregação dos dados)
 - **OpenPyXL** (leitura de arquivos Excel)
 
